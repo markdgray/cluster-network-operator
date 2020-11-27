@@ -367,13 +367,13 @@ spec:
                       if [[ ${election_timer} -le ${max_election_timer} ]]; then
                         if ! ovs-appctl -t /var/run/ovn/ovnnb_db.ctl cluster/change-election-timer OVN_Northbound ${election_timer}; then
                           echo "Failed to set nb-db raft election timer ${election_timer}. Exiting..."
-                          exit 2
+                          #exit 2
                         fi
                         current_election_timer=${election_timer}
                       else
                         if ! ovs-appctl -t /var/run/ovn/ovnnb_db.ctl cluster/change-election-timer OVN_Northbound ${max_election_timer}; then
                           echo "Failed to set nb-db raft election timer ${max_election_timer}. Exiting..."
-                          exit 2
+                          #exit 2
                         fi
                       current_election_timer=${max_election_timer}
                       fi
@@ -719,13 +719,13 @@ spec:
                       if [[ ${election_timer} -le ${max_election_timer} ]]; then
                         if ! ovs-appctl -t /var/run/ovn/ovnsb_db.ctl cluster/change-election-timer OVN_Southbound ${election_timer}; then
                           echo "Failed to set sb-db raft election timer ${election_timer}. Exiting..."
-                          exit 2
+                          #exit 2
                         fi
                         current_election_timer=${election_timer}
                       else
                         if ! ovs-appctl -t /var/run/ovn/ovnsb_db.ctl cluster/change-election-timer OVN_Southbound ${max_election_timer}; then
                           echo "Failed to set sb-db raft election timer ${max_election_timer}. Exiting..."
-                          exit 2
+                          #exit 2
                         fi
                       current_election_timer=${max_election_timer}
                       fi

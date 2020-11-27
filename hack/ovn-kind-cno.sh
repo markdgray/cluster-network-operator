@@ -148,6 +148,11 @@ if [ "$BUILD_OVN" = true ] || [ "$BUILD_CNO" = true ]; then
   mv deployment.yaml.bk $DEPLOYMENT_TEMPLATE
   popd
 fi
+# CNO needs to get scheduled on first node, because thats where KIND will put /etc/kubernetes/kubeconfig
+until kubectl get pod -n openshift-network-operator -o wide | grep "ovn-control-plane ";do
+kubectl delete pod -n openshift-network-operator --all --grace-period=0 --force
+  sleep 1
+done
 
 if ! kubectl wait -n openshift-network-operator --for condition=available deployment network-operator --timeout=120s; then
   echo "Network operator not running"
@@ -202,17 +207,23 @@ done
 # wait until resources are created
 sleep 30
 
-if ! kubectl wait -n openshift-ovn-kubernetes --for=condition=ready pods --all --timeout=300s ; then
-  echo "OVN-k8s pods are not running"
+if ! kubectl wait -n openshift-ovn-kubernetes --for=condition=ready --selector=app!=ovnkube-node-metrics,app!=ovnkube-master-metrics pods --all --timeout=300s ; then 
+  echo "OVN-k8s pods are not Ready"
   exit 1
 fi
+
 
 # Configuring secret for multus-admission-webhook
 # https://raw.githubusercontent.com/openshift/multus-admission-controller/master/hack/webhook-create-signed-cert.sh
 $CNO_PATH/hack/webhook-create-signed-cert.sh --service multus-admission-controller --namespace openshift-multus --secret multus-admission-controller-secret
-if ! kubectl wait -n openshift-multus --for=condition=ready pods --all --timeout=300s ; then
+# Wait for pods to come up and be ready. Note metrics and admission controller pods do not currently work.
+if ! kubectl wait -n openshift-multus --for=condition=ready pods --selector=app!=network-metrics-daemon,app!=multus-admission-controller --all --timeout=300s ; then
   echo "multus pods are not running"
   exit 1
 fi
 
-echo "Deployment Complete!"
+for n in $NODES; do
+  echo "Restarting containerd on $n"
+  docker exec $n systemctl restart containerd
+done
+echo "Deployment Complete!  Use 'kind export kubeconfig --name ovn' to access your cluster"
